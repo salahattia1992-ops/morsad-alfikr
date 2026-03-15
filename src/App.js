@@ -81,10 +81,9 @@ export default function App() {
     selectedRegion === "الكل" || t.region === selectedRegion
   );
 
-  const fetchArticles = useCallback(async (tanks, silent = false) => {
-    if (!silent) setLoading(true);
+const fetchArticles = useCallback(async (tanks, silent = false) => {
+    if (!silent) { setLoading(true); setArticles([]); }
     else setRefreshing(true);
-    if (!silent) setArticles([]);
     const newStatus = {};
     tanks.forEach(t => { newStatus[t.id] = "loading"; });
     setFetchStatus(prev => ({ ...prev, ...newStatus }));
@@ -126,7 +125,7 @@ export default function App() {
     setLastRefresh(new Date());
     setNextRefreshIn(AUTO_REFRESH_MINUTES * 60);
     if (!silent) setLoading(false);
-    else { setRefreshing(false); showNotif(`🔄 تم تحديث ${all.length} مقالة`); }
+    else { setRefreshing(false); showNotif(`✅ تم تحميل ${all.length} مقالة`); }
   }, []);
 
   // Auto refresh timer
