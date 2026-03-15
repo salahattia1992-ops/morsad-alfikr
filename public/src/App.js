@@ -1,0 +1,564 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+const THINK_TANKS = [
+  { id: 1, name: "Carnegie Endowment", nameAr: "معهد كارنيغي للسلام الدولي", region: "أمريكا", flag: "🇺🇸", rss: "https://carnegieendowment.org/publications/rss/", color: "#c41230", accent: "#ff4d6d" },
+  { id: 2, name: "RAND Corporation", nameAr: "مؤسسة راند", region: "أمريكا", flag: "🇺🇸", rss: "https://www.rand.org/publications/rss/articles.xml", color: "#003087", accent: "#4d8bf5" },
+  { id: 3, name: "Brookings Institution", nameAr: "معهد بروكينغز", region: "أمريكا", flag: "🇺🇸", rss: "https://www.brookings.edu/feed/", color: "#005288", accent: "#00a0e3" },
+  { id: 4, name: "Council on Foreign Relations", nameAr: "مجلس العلاقات الخارجية", region: "أمريكا", flag: "🇺🇸", rss: "https://www.cfr.org/rss/all", color: "#1a1a2e", accent: "#e94560" },
+  { id: 5, name: "Heritage Foundation", nameAr: "مؤسسة هيريتاج", region: "أمريكا", flag: "🇺🇸", rss: "https://feeds.feedburner.com/DailySignal", color: "#bf0a30", accent: "#ff6b35" },
+  { id: 6, name: "CSIS", nameAr: "مركز الدراسات الاستراتيجية والدولية", region: "أمريكا", flag: "🇺🇸", rss: "https://www.csis.org/publications/rss.xml", color: "#0d2137", accent: "#00d4ff" },
+  { id: 7, name: "Atlantic Council", nameAr: "المجلس الأطلسي", region: "أمريكا", flag: "🇺🇸", rss: "https://www.atlanticcouncil.org/feed/", color: "#002868", accent: "#6ab0de" },
+  { id: 8, name: "Wilson Center", nameAr: "مركز ويلسون", region: "أمريكا", flag: "🇺🇸", rss: "https://www.wilsoncenter.org/rss.xml", color: "#1b3a4b", accent: "#40c9a2" },
+  { id: 9, name: "American Enterprise Institute", nameAr: "معهد المشروع الأمريكي", region: "أمريكا", flag: "🇺🇸", rss: "https://www.aei.org/feed/", color: "#8b0000", accent: "#ff8c00" },
+  { id: 10, name: "Hoover Institution", nameAr: "مؤسسة هوفر", region: "أمريكا", flag: "🇺🇸", rss: "https://www.hoover.org/hoover.rss", color: "#8c1515", accent: "#ffd700" },
+  { id: 11, name: "Stimson Center", nameAr: "مركز ستيمسون", region: "أمريكا", flag: "🇺🇸", rss: "https://www.stimson.org/feed/", color: "#1a3a2a", accent: "#3ddc97" },
+  { id: 12, name: "Middle East Institute", nameAr: "معهد الشرق الأوسط", region: "أمريكا", flag: "🇺🇸", rss: "https://www.mei.edu/rss", color: "#2d1b69", accent: "#c77dff" },
+  { id: 13, name: "Chatham House", nameAr: "تشاتام هاوس", region: "أوروبا", flag: "🇬🇧", rss: "https://www.chathamhouse.org/rss/chatham-house-news", color: "#012169", accent: "#cf142b" },
+  { id: 14, name: "IISS", nameAr: "المعهد الدولي للدراسات الاستراتيجية", region: "أوروبا", flag: "🇬🇧", rss: "https://www.iiss.org/rss", color: "#1c1c3a", accent: "#e8b84b" },
+  { id: 15, name: "Oxford Analytica", nameAr: "أكسفورد أناليتيكا", region: "أوروبا", flag: "🇬🇧", rss: "https://oxan.com/feed/", color: "#002147", accent: "#a6c8ff" },
+  { id: 16, name: "ECFR", nameAr: "المجلس الأوروبي للعلاقات الخارجية", region: "أوروبا", flag: "🇪🇺", rss: "https://ecfr.eu/feed/", color: "#003399", accent: "#ffcc00" },
+  { id: 17, name: "Bruegel", nameAr: "معهد بروغل", region: "أوروبا", flag: "🇧🇪", rss: "https://www.bruegel.org/rss", color: "#1a1a6e", accent: "#4fc3f7" },
+  { id: 18, name: "SIPRI", nameAr: "معهد ستوكهولم لأبحاث السلام", region: "أوروبا", flag: "🇸🇪", rss: "https://www.sipri.org/rss.xml", color: "#006aa7", accent: "#fecc02" },
+  { id: 19, name: "German Marshall Fund", nameAr: "صندوق مارشال الألماني", region: "أوروبا", flag: "🇩🇪", rss: "https://www.gmfus.org/feed", color: "#1a1a1a", accent: "#dd0000" },
+  { id: 20, name: "Institut Montaigne", nameAr: "معهد مونتين", region: "أوروبا", flag: "🇫🇷", rss: "https://www.institutmontaigne.org/en/rss.xml", color: "#002395", accent: "#ed2939" },
+  { id: 21, name: "ISPI", nameAr: "المعهد الإيطالي للدراسات السياسية", region: "أوروبا", flag: "🇮🇹", rss: "https://www.ispionline.it/en/rss", color: "#009246", accent: "#ce2b37" },
+  { id: 22, name: "Valdai Club", nameAr: "نادي فالداي للنقاش", region: "روسيا", flag: "🇷🇺", rss: "https://valdaiclub.com/rss/", color: "#cc0000", accent: "#ffd700" },
+  { id: 23, name: "RIAC", nameAr: "المجلس الروسي للشؤون الدولية", region: "روسيا", flag: "🇷🇺", rss: "https://russiancouncil.ru/en/rss/", color: "#1a237e", accent: "#ef5350" },
+  { id: 24, name: "CASS", nameAr: "أكاديمية العلوم الاجتماعية الصينية", region: "آسيا", flag: "🇨🇳", rss: "http://www.cass.cn/rss", color: "#8b0000", accent: "#ffd700" },
+  { id: 25, name: "SIIS", nameAr: "معاهد شنغهاي للدراسات الدولية", region: "آسيا", flag: "🇨🇳", rss: "https://www.siis.org.cn/rss", color: "#c0392b", accent: "#f39c12" },
+  { id: 26, name: "CIIS", nameAr: "معهد الصين للدراسات الدولية", region: "آسيا", flag: "🇨🇳", rss: "http://www.ciis.org.cn/rss", color: "#922b21", accent: "#e74c3c" },
+  { id: 27, name: "ISEAS-Yusof Ishak", nameAr: "معهد جنوب شرق آسيا", region: "آسيا", flag: "🇸🇬", rss: "https://www.iseas.edu.sg/medias/feed/", color: "#003d6b", accent: "#e74c3c" },
+  { id: 28, name: "Observer Research Foundation", nameAr: "مؤسسة أبحاث أوبزرفر", region: "آسيا", flag: "🇮🇳", rss: "https://www.orfonline.org/feed/", color: "#ff6600", accent: "#138808" },
+  { id: 29, name: "Al Jazeera Centre", nameAr: "مركز الجزيرة للدراسات", region: "عربي", flag: "🇶🇦", rss: "https://studies.aljazeera.net/ar/rss.xml", color: "#4b0082", accent: "#ffd700" },
+  { id: 30, name: "Brookings Doha", nameAr: "مركز بروكينغز الدوحة", region: "عربي", flag: "🇶🇦", rss: "https://www.brookings.edu/center/brookings-doha-center/feed/", color: "#005288", accent: "#c8a951" },
+];
+
+const REGIONS = ["الكل", "أمريكا", "أوروبا", "روسيا", "آسيا", "عربي"];
+const RSS_PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+const AUTO_REFRESH_MINUTES = 30;
+
+export default function App() {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState("الكل");
+  const [selectedTank, setSelectedTank] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [translating, setTranslating] = useState({});
+  const [translations, setTranslations] = useState({});
+  const [expandedArticle, setExpandedArticle] = useState(null);
+  const [fetchStatus, setFetchStatus] = useState({});
+  const [activeView, setActiveView] = useState("grid");
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("morsad_favorites") || "[]"); } catch { return []; }
+  });
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [articleCounts, setArticleCounts] = useState({});
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [nextRefreshIn, setNextRefreshIn] = useState(AUTO_REFRESH_MINUTES * 60);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [activeTab, setActiveTab] = useState("articles"); // articles | favorites | stats
+  const timerRef = useRef(null);
+  const countdownRef = useRef(null);
+
+  const showNotif = (msg, type = "success") => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const toggleFavorite = (articleId) => {
+    setFavorites(prev => {
+      const updated = prev.includes(articleId)
+        ? prev.filter(id => id !== articleId)
+        : [...prev, articleId];
+      try { localStorage.setItem("morsad_favorites", JSON.stringify(updated)); } catch {}
+      showNotif(prev.includes(articleId) ? "تمت إزالة المقالة من المفضلة" : "✨ تمت إضافة المقالة للمفضلة");
+      return updated;
+    });
+  };
+
+  const filteredTanks = THINK_TANKS.filter(t =>
+    selectedRegion === "الكل" || t.region === selectedRegion
+  );
+
+  const fetchArticles = useCallback(async (tanks, silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    if (!silent) setArticles([]);
+    const newStatus = {};
+    tanks.forEach(t => { newStatus[t.id] = "loading"; });
+    setFetchStatus(prev => ({ ...prev, ...newStatus }));
+
+    const promises = tanks.map(async (tank) => {
+      try {
+        const res = await fetch(`${RSS_PROXY}${encodeURIComponent(tank.rss)}&count=5`);
+        const data = await res.json();
+        if (data.status === "ok" && data.items?.length) {
+          setFetchStatus(prev => ({ ...prev, [tank.id]: "ok" }));
+          setArticleCounts(prev => ({ ...prev, [tank.id]: data.items.length }));
+          return data.items.map((item, i) => ({
+            id: `${tank.id}-${i}-${Date.now()}`,
+            stableId: `${tank.id}-${i}`,
+            tankId: tank.id,
+            tankName: tank.nameAr,
+            tankColor: tank.color,
+            tankAccent: tank.accent,
+            flag: tank.flag,
+            region: tank.region,
+            title: item.title || "",
+            description: item.description?.replace(/<[^>]*>/g, "").slice(0, 300) || "",
+            link: item.link || "",
+            date: item.pubDate || "",
+          }));
+        }
+        setFetchStatus(prev => ({ ...prev, [tank.id]: "error" }));
+        return [];
+      } catch {
+        setFetchStatus(prev => ({ ...prev, [tank.id]: "error" }));
+        return [];
+      }
+    });
+
+    const results = await Promise.allSettled(promises);
+    const all = results.flatMap(r => r.status === "fulfilled" ? r.value : []);
+    all.sort((a, b) => new Date(b.date) - new Date(a.date));
+    setArticles(all);
+    setLastRefresh(new Date());
+    setNextRefreshIn(AUTO_REFRESH_MINUTES * 60);
+    if (!silent) setLoading(false);
+    else { setRefreshing(false); showNotif(`🔄 تم تحديث ${all.length} مقالة`); }
+  }, []);
+
+  // Auto refresh timer
+  useEffect(() => {
+    const tanks = selectedTank ? THINK_TANKS.filter(t => t.id === selectedTank) : filteredTanks;
+    fetchArticles(tanks);
+
+    timerRef.current = setInterval(() => {
+      fetchArticles(tanks, true);
+    }, AUTO_REFRESH_MINUTES * 60 * 1000);
+
+    countdownRef.current = setInterval(() => {
+      setNextRefreshIn(prev => prev > 0 ? prev - 1 : AUTO_REFRESH_MINUTES * 60);
+    }, 1000);
+
+    return () => {
+      clearInterval(timerRef.current);
+      clearInterval(countdownRef.current);
+    };
+  }, [selectedRegion, selectedTank]);
+
+  const handleManualRefresh = () => {
+    const tanks = selectedTank ? THINK_TANKS.filter(t => t.id === selectedTank) : filteredTanks;
+    fetchArticles(tanks, true);
+  };
+
+  const translateArticle = async (article) => {
+    const key = article.stableId;
+    if (translations[key]) { setExpandedArticle(expandedArticle === key ? null : key); return; }
+    setTranslating(prev => ({ ...prev, [key]: true }));
+    setExpandedArticle(key);
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{
+            role: "user",
+            content: `ترجم هذا المقال من المركز البحثي "${article.tankName}" إلى العربية الفصحى. أجب بـ JSON فقط بدون نص خارجه:
+{"title":"العنوان المترجم","summary":"ملخص 3-4 جمل","keyPoints":["نقطة 1","نقطة 2","نقطة 3"]}
+العنوان: ${article.title}
+المحتوى: ${article.description}`
+          }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.[0]?.text || "{}";
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      setTranslations(prev => ({ ...prev, [key]: parsed }));
+    } catch {
+      setTranslations(prev => ({ ...prev, [key]: { title: "تعذّرت الترجمة", summary: "يُرجى المحاولة مجدداً.", keyPoints: [] } }));
+    }
+    setTranslating(prev => ({ ...prev, [key]: false }));
+  };
+
+  const filteredArticles = articles.filter(a => {
+    const matchSearch = !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.tankName.includes(searchQuery);
+    const matchFav = !showFavoritesOnly || favorites.includes(a.stableId);
+    return matchSearch && matchFav;
+  });
+
+  const favoriteArticles = articles.filter(a => favorites.includes(a.stableId));
+
+  const formatDate = (d) => { try { return new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" }); } catch { return ""; } };
+  const formatCountdown = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  const statsData = THINK_TANKS.map(t => ({
+    ...t,
+    count: articles.filter(a => a.tankId === t.id).length,
+    status: fetchStatus[t.id]
+  })).filter(t => t.count > 0).sort((a, b) => b.count - a.count);
+
+  const ArticleCard = ({ article }) => {
+    const key = article.stableId;
+    const isExpanded = expandedArticle === key;
+    const trans = translations[key];
+    const isTranslating = translating[key];
+    const isFav = favorites.includes(key);
+
+    return (
+      <article className="article-card" style={{
+        borderRadius: 18,
+        background: isExpanded ? `linear-gradient(135deg, ${article.tankColor}22, rgba(8,8,20,0.98))` : "rgba(255,255,255,0.03)",
+        overflow: "hidden", position: "relative"
+      }}>
+        <div style={{ height: 3, background: `linear-gradient(90deg, ${article.tankColor}, ${article.tankAccent})` }} />
+        <div style={{ padding: activeView === "grid" ? "18px" : "14px 18px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 18 }}>{article.flag}</span>
+              <div>
+                <div style={{ fontSize: 11, color: article.tankAccent, fontWeight: 700 }}>{article.tankName}</div>
+                <div style={{ fontSize: 10, color: "#555" }}>{formatDate(article.date)}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: `${article.tankColor}44`, color: article.tankAccent, border: `1px solid ${article.tankColor}66` }}>{article.region}</span>
+              <button onClick={(e) => { e.stopPropagation(); toggleFavorite(key); }} style={{
+                background: isFav ? "rgba(255,215,0,0.15)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${isFav ? "rgba(255,215,0,0.4)" : "rgba(255,255,255,0.1)"}`,
+                borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 14,
+                color: isFav ? "#ffd700" : "#555", transition: "all 0.2s"
+              }}>{isFav ? "★" : "☆"}</button>
+            </div>
+          </div>
+
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f8", lineHeight: 1.7, marginBottom: 10, display: "-webkit-box", WebkitLineClamp: isExpanded ? "unset" : 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {article.title}
+          </h3>
+
+          {!isExpanded && (
+            <p style={{ fontSize: 12, color: "#555", lineHeight: 1.8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 12 }}>
+              {article.description}
+            </p>
+          )}
+
+          {isExpanded && (
+            <div className="slide-in" style={{ marginBottom: 14 }}>
+              {isTranslating && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 14, background: "rgba(212,175,55,0.08)", borderRadius: 12, border: "1px solid rgba(212,175,55,0.2)" }}>
+                  <div className="pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#d4af37" }} />
+                  <span style={{ fontSize: 13, color: "#d4af37" }}>جارٍ الترجمة بالذكاء الاصطناعي...</span>
+                </div>
+              )}
+              {trans && !isTranslating && (
+                <div style={{ background: "rgba(212,175,55,0.06)", borderRadius: 14, padding: 16, border: "1px solid rgba(212,175,55,0.15)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <span>✨</span>
+                    <span style={{ fontSize: 11, color: "#d4af37", fontWeight: 700, letterSpacing: 1 }}>ترجمة بالذكاء الاصطناعي</span>
+                  </div>
+                  {trans.title && <h4 style={{ fontSize: 15, fontWeight: 800, color: "#f5f0d8", marginBottom: 10, lineHeight: 1.6 }}>{trans.title}</h4>}
+                  {trans.summary && <p style={{ fontSize: 13, color: "#b0a898", lineHeight: 2, marginBottom: 12 }}>{trans.summary}</p>}
+                  {trans.keyPoints?.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, color: "#d4af37", marginBottom: 8 }}>النقاط الرئيسية:</div>
+                      {trans.keyPoints.map((pt, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
+                          <span style={{ color: article.tankAccent, fontSize: 10, marginTop: 5, flexShrink: 0 }}>◆</span>
+                          <span style={{ fontSize: 12, color: "#c0b898", lineHeight: 1.8 }}>{pt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => translateArticle(article)} style={{
+              flex: 1, padding: "9px 14px", borderRadius: 10, border: "none", cursor: "pointer",
+              background: isExpanded ? `linear-gradient(135deg, ${article.tankColor}, ${article.tankAccent})` : "rgba(212,175,55,0.12)",
+              color: isExpanded ? "#fff" : "#d4af37", fontSize: 12, fontWeight: 700, fontFamily: "Cairo",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.2s"
+            }}>
+              {isTranslating ? <><span className="pulse">⚡</span>جارٍ الترجمة</> : isExpanded ? <>✕ إغلاق</> : <>🌐 ترجم المقال</>}
+            </button>
+            <a href={article.link} target="_blank" rel="noopener noreferrer" style={{
+              padding: "9px 12px", borderRadius: 10, fontSize: 13,
+              background: "rgba(255,255,255,0.05)", color: "#777",
+              textDecoration: "none", border: "1px solid rgba(255,255,255,0.08)"
+            }}>↗</a>
+          </div>
+        </div>
+      </article>
+    );
+  };
+
+  return (
+    <div dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(135deg, #030308 0%, #0a0a18 50%, #050510 100%)", fontFamily: "'Cairo', sans-serif", color: "#e8e8f0", overflowX: "hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0a0a18}::-webkit-scrollbar-thumb{background:#8b6914;border-radius:3px}
+        .article-card{transition:all 0.3s ease;border:1px solid rgba(255,255,255,0.06)}
+        .article-card:hover{transform:translateY(-4px);border-color:rgba(212,175,55,0.25);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+        .tank-chip{cursor:pointer;transition:all 0.25s ease;border:1px solid rgba(255,255,255,0.08)}
+        .tank-chip:hover{border-color:rgba(212,175,55,0.4);transform:translateY(-1px)}
+        .tank-chip.active{border-color:#d4af37;box-shadow:0 0 16px rgba(212,175,55,0.25)}
+        .pulse{animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        .slide-in{animation:slideIn 0.35s ease}@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        .shimmer{background:linear-gradient(90deg,#0f0f24 25%,#1a1a35 50%,#0f0f24 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        .notif{animation:notifIn 0.3s ease}@keyframes notifIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .spin{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .tab-btn{cursor:pointer;transition:all 0.2s;border:none;font-family:Cairo}
+        .region-btn{cursor:pointer;transition:all 0.2s;border:none;font-family:Cairo}
+        .glow{text-shadow:0 0 30px rgba(212,175,55,0.4)}
+        .search-input{outline:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.2s}
+        .search-input:focus{border-color:rgba(212,175,55,0.5);background:rgba(212,175,55,0.05)}
+      `}</style>
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className="notif" style={{
+          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          background: notification.type === "success" ? "rgba(61,220,151,0.15)" : "rgba(255,77,109,0.15)",
+          border: `1px solid ${notification.type === "success" ? "rgba(61,220,151,0.4)" : "rgba(255,77,109,0.4)"}`,
+          color: notification.type === "success" ? "#3ddc97" : "#ff4d6d",
+          padding: "12px 24px", borderRadius: 30, fontSize: 13, fontWeight: 600,
+          zIndex: 9999, backdropFilter: "blur(20px)", whiteSpace: "nowrap"
+        }}>{notification.msg}</div>
+      )}
+
+      {/* Header */}
+      <header style={{
+        background: "rgba(5,5,18,0.95)", borderBottom: "1px solid rgba(212,175,55,0.15)",
+        backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, padding: "0 24px"
+      }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #d4af37, #8b6914)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 20px rgba(212,175,55,0.35)" }}>🔭</div>
+            <div>
+              <h1 className="glow" style={{ fontSize: 20, fontWeight: 900, color: "#d4af37" }}>مرصد الفكر العالمي</h1>
+              <p style={{ fontSize: 10, color: "#666", letterSpacing: 1 }}>GLOBAL THINK TANK MONITOR</p>
+            </div>
+          </div>
+
+          {/* Countdown & Refresh */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ textAlign: "center", padding: "6px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>التحديث التالي</div>
+              <div style={{ fontSize: 13, color: "#d4af37", fontWeight: 700, letterSpacing: 1 }}>{formatCountdown(nextRefreshIn)}</div>
+            </div>
+            <button onClick={handleManualRefresh} disabled={refreshing} style={{
+              padding: "9px 18px", borderRadius: 10, border: "1px solid rgba(212,175,55,0.3)",
+              background: "rgba(212,175,55,0.08)", color: "#d4af37", cursor: "pointer",
+              fontSize: 13, fontWeight: 600, fontFamily: "Cairo", display: "flex", alignItems: "center", gap: 8,
+              opacity: refreshing ? 0.7 : 1
+            }}>
+              <span className={refreshing ? "spin" : ""} style={{ fontSize: 14 }}>↻</span>
+              {refreshing ? "جارٍ..." : "تحديث الآن"}
+            </button>
+            {lastRefresh && (
+              <div style={{ fontSize: 11, color: "#444" }}>
+                آخر تحديث: {lastRefresh.toLocaleTimeString("ar-SA")}
+              </div>
+            )}
+          </div>
+
+          {/* Search */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ position: "relative" }}>
+              <input className="search-input" placeholder="ابحث..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                style={{ padding: "9px 36px 9px 14px", borderRadius: 10, color: "#e8e8f0", fontSize: 13, width: 200 }} />
+              <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#555" }}>🔍</span>
+            </div>
+            <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              {["grid", "list"].map(v => (
+                <button key={v} onClick={() => setActiveView(v)} style={{
+                  padding: "8px 12px", border: "none", cursor: "pointer", fontSize: 15,
+                  background: activeView === v ? "rgba(212,175,55,0.15)" : "transparent",
+                  color: activeView === v ? "#d4af37" : "#666"
+                }}>{v === "grid" ? "⊞" : "☰"}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", gap: 4, paddingBottom: 0 }}>
+          {[
+            { key: "articles", label: `المقالات`, icon: "📰", count: articles.length },
+            { key: "favorites", label: "المفضلة", icon: "★", count: favorites.length },
+            { key: "stats", label: "الإحصاءات", icon: "📊", count: null }
+          ].map(tab => (
+            <button key={tab.key} className="tab-btn" onClick={() => setActiveTab(tab.key)} style={{
+              padding: "10px 20px", borderRadius: "10px 10px 0 0", fontSize: 13, fontWeight: tab.key === activeTab ? 700 : 400,
+              background: tab.key === activeTab ? "rgba(212,175,55,0.12)" : "transparent",
+              color: tab.key === activeTab ? "#d4af37" : "#666",
+              borderBottom: tab.key === activeTab ? "2px solid #d4af37" : "2px solid transparent",
+              display: "flex", alignItems: "center", gap: 6
+            }}>
+              <span>{tab.icon}</span>{tab.label}
+              {tab.count !== null && tab.count > 0 && (
+                <span style={{ background: tab.key === activeTab ? "#d4af37" : "rgba(255,255,255,0.1)", color: tab.key === activeTab ? "#000" : "#888", borderRadius: 20, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>{tab.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px" }}>
+
+        {/* ARTICLES TAB */}
+        {activeTab === "articles" && (
+          <>
+            {/* Region filters */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+              {REGIONS.map(r => (
+                <button key={r} className="region-btn" onClick={() => { setSelectedRegion(r); setSelectedTank(null); }} style={{
+                  padding: "8px 18px", borderRadius: 30, fontSize: 13,
+                  background: selectedRegion === r ? "linear-gradient(135deg, #d4af37, #8b6914)" : "rgba(255,255,255,0.05)",
+                  color: selectedRegion === r ? "#000" : "#aaa", fontWeight: selectedRegion === r ? 700 : 400,
+                  boxShadow: selectedRegion === r ? "0 4px 16px rgba(212,175,55,0.35)" : "none"
+                }}>{r === "الكل" ? "🌍 " : ""}{r}</button>
+              ))}
+              <button onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} style={{
+                padding: "8px 18px", borderRadius: 30, fontSize: 13, cursor: "pointer", border: "none", fontFamily: "Cairo",
+                background: showFavoritesOnly ? "rgba(255,215,0,0.15)" : "rgba(255,255,255,0.05)",
+                color: showFavoritesOnly ? "#ffd700" : "#888",
+                border: `1px solid ${showFavoritesOnly ? "rgba(255,215,0,0.4)" : "rgba(255,255,255,0.1)"}`,
+              }}>★ المفضلة فقط</button>
+            </div>
+
+            {/* Think tank chips */}
+            <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.05)", padding: 18, marginBottom: 28 }}>
+              <div style={{ fontSize: 11, color: "#d4af37", letterSpacing: 2, marginBottom: 14, fontWeight: 600 }}>◆ المراكز البحثية — {filteredTanks.length} مركزاً</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {filteredTanks.map(tank => (
+                  <div key={tank.id} className={`tank-chip ${selectedTank === tank.id ? "active" : ""}`}
+                    onClick={() => setSelectedTank(selectedTank === tank.id ? null : tank.id)}
+                    style={{
+                      padding: "7px 14px", borderRadius: 10,
+                      background: selectedTank === tank.id ? `linear-gradient(135deg, ${tank.color}bb, ${tank.color}77)` : "rgba(255,255,255,0.03)",
+                      display: "flex", alignItems: "center", gap: 8
+                    }}>
+                    <span style={{ fontSize: 15 }}>{tank.flag}</span>
+                    <span style={{ fontSize: 11, fontWeight: selectedTank === tank.id ? 700 : 400, color: selectedTank === tank.id ? "#fff" : "#aaa" }}>{tank.nameAr}</span>
+                    {articleCounts[tank.id] > 0 && <span style={{ fontSize: 10, background: "rgba(212,175,55,0.15)", color: "#d4af37", borderRadius: 10, padding: "1px 6px" }}>{articleCounts[tank.id]}</span>}
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", flexShrink: 0, background: fetchStatus[tank.id] === "ok" ? "#3ddc97" : fetchStatus[tank.id] === "loading" ? "#d4af37" : fetchStatus[tank.id] === "error" ? "#ff4d6d" : "#333" }} className={fetchStatus[tank.id] === "loading" ? "pulse" : ""} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Articles */}
+            {loading && (
+              <div style={{ display: "grid", gridTemplateColumns: activeView === "grid" ? "repeat(auto-fill, minmax(340px, 1fr))" : "1fr", gap: 18 }}>
+                {Array(6).fill(0).map((_, i) => <div key={i} className="shimmer" style={{ borderRadius: 16, height: activeView === "grid" ? 250 : 110 }} />)}
+              </div>
+            )}
+
+            {!loading && filteredArticles.length === 0 && (
+              <div style={{ textAlign: "center", padding: "80px 20px" }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>🔭</div>
+                <h3 style={{ color: "#d4af37", fontSize: 18, marginBottom: 8 }}>لا توجد نتائج</h3>
+                <p style={{ color: "#555", fontSize: 13 }}>جرّب تغيير الفلتر أو البحث بكلمة مختلفة</p>
+              </div>
+            )}
+
+            {!loading && filteredArticles.length > 0 && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+                  <span style={{ fontSize: 13, color: "#555" }}><span style={{ color: "#d4af37", fontWeight: 700 }}>{filteredArticles.length}</span> مقالة</span>
+                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />
+                  <span style={{ fontSize: 11, color: "#444" }}>انقر ترجم للحصول على ترجمة فورية بالذكاء الاصطناعي</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: activeView === "grid" ? "repeat(auto-fill, minmax(350px, 1fr))" : "1fr", gap: 18 }}>
+                  {filteredArticles.map(a => <ArticleCard key={a.id} article={a} />)}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* FAVORITES TAB */}
+        {activeTab === "favorites" && (
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ fontSize: 18, color: "#ffd700", marginBottom: 6 }}>★ المقالات المحفوظة</h2>
+              <p style={{ fontSize: 13, color: "#555" }}>{favoriteArticles.length} مقالة محفوظة</p>
+            </div>
+            {favoriteArticles.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "80px 20px" }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>☆</div>
+                <h3 style={{ color: "#888", fontSize: 18, marginBottom: 8 }}>لا توجد مقالات محفوظة</h3>
+                <p style={{ color: "#555", fontSize: 13 }}>اضغط على ☆ في أي مقالة لحفظها هنا</p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: 18 }}>
+                {favoriteArticles.map(a => <ArticleCard key={a.id} article={a} />)}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* STATS TAB */}
+        {activeTab === "stats" && (
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ fontSize: 18, color: "#d4af37", marginBottom: 6 }}>📊 إحصاءات المراكز البحثية</h2>
+              <p style={{ fontSize: 13, color: "#555" }}>نظرة عامة على نشاط المراكز في هذه الجلسة</p>
+            </div>
+
+            {/* Summary cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
+              {[
+                { label: "إجمالي المقالات", value: articles.length, icon: "📰", color: "#d4af37" },
+                { label: "المراكز النشطة", value: Object.values(fetchStatus).filter(s => s === "ok").length, icon: "✅", color: "#3ddc97" },
+                { label: "المقالات المترجمة", value: Object.keys(translations).length, icon: "🌐", color: "#4d8bf5" },
+                { label: "المحفوظة", value: favorites.length, icon: "★", color: "#ffd700" },
+              ].map((stat, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "20px", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{stat.icon}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: stat.color, marginBottom: 4 }}>{stat.value}</div>
+                  <div style={{ fontSize: 12, color: "#666" }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Per-tank stats */}
+            <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.05)", padding: 20 }}>
+              <div style={{ fontSize: 13, color: "#d4af37", marginBottom: 18, fontWeight: 700 }}>نشاط كل مركز</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {statsData.map(tank => {
+                  const maxCount = Math.max(...statsData.map(t => t.count), 1);
+                  const pct = (tank.count / maxCount) * 100;
+                  return (
+                    <div key={tank.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{tank.flag}</span>
+                      <div style={{ width: 160, fontSize: 12, color: "#aaa", flexShrink: 0, textAlign: "right" }}>{tank.nameAr}</div>
+                      <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${tank.color}, ${tank.accent})`, borderRadius: 8, transition: "width 1s ease" }} />
+                      </div>
+                      <span style={{ fontSize: 12, color: tank.accent, fontWeight: 700, width: 24, textAlign: "center" }}>{tank.count}</span>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: tank.status === "ok" ? "#3ddc97" : tank.status === "error" ? "#ff4d6d" : "#555" }} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        <footer style={{ textAlign: "center", padding: "48px 20px 24px", color: "#333", fontSize: 12 }}>
+          <div style={{ color: "#d4af37", marginBottom: 4 }}>مرصد الفكر العالمي ◆ {THINK_TANKS.length} مركزاً بحثياً</div>
+          <div>تحديث تلقائي كل {AUTO_REFRESH_MINUTES} دقيقة • ترجمة بالذكاء الاصطناعي</div>
+        </footer>
+      </div>
+    </div>
+  );
+}
