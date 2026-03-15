@@ -151,26 +151,7 @@ export default function App() {
     if (translations[key]) { setExpandedArticle(expandedArticle === key ? null : key); return; }
     setTranslating(prev => ({ ...prev, [key]: true }));
     setExpandedArticle(key);
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: `ترجم هذا المقال من المركز البحثي "${article.tankName}" إلى العربية الفصحى. أجب بـ JSON فقط:\n{"title":"العنوان","summary":"ملخص 3-4 جمل","keyPoints":["نقطة 1","نقطة 2","نقطة 3"]}\n\nالعنوان: ${article.title}\nالمحتوى: ${article.description}` }]
-        })
-      });
-      const data = await response.json();
-      const text = data.content?.[0]?.text || "{}";
-      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-      setTranslations(prev => ({ ...prev, [key]: parsed }));
-    } catch {
-      setTranslations(prev => ({ ...prev, [key]: { title: "تعذّرت الترجمة", summary: "يُرجى المحاولة مجدداً.", keyPoints: [] } }));
-    }
-    setTranslating(prev => ({ ...prev, [key]: false }));
-  };
-
+   
   const filteredArticles = articles.filter(a =>
     !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.tankName.includes(searchQuery)
   );
